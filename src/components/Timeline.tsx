@@ -26,7 +26,7 @@ export default function Timeline({ plogs, onExpand }: Props) {
       {/* Center line (hidden on mobile) */}
       <div className="absolute left-1/2 top-0 bottom-0 hidden w-px -translate-x-px bg-line md:block" />
 
-      <div className="flex flex-col gap-24 md:gap-16">
+      <div className="flex flex-col gap-16 md:gap-24">
         {plogs.map((plog, i) => (
           <TimelineRow
             key={plog.id}
@@ -56,17 +56,17 @@ function TimelineRow({
 }) {
   return (
     <div
-      className={`flex items-center gap-0 md:gap-0 ${
+      className={`flex flex-col items-center md:flex-row md:items-center ${
         side === 'left' ? 'md:flex-row' : 'md:flex-row-reverse'
       }`}
     >
       {/* Card */}
-      <div className="flex-1 md:w-[calc(50%-2rem)] md:flex-none">
+      <div className="w-full flex-1 md:w-[calc(50%-2rem)] md:flex-none">
         <PlogCard plog={plog} onExpand={onExpand} />
       </div>
 
-      {/* Timeline dot (center marker) */}
-      <div className="mx-3 flex shrink-0 justify-center md:mx-8">
+      {/* Timeline dot — above card on mobile, centered on desktop */}
+      <div className="order-first mb-3 flex shrink-0 justify-center md:order-none md:mx-8 md:mb-0">
         <div className="h-3 w-3 rounded-full border-[3px] border-accent bg-page ring-4 ring-page" />
       </div>
 

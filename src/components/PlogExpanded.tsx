@@ -36,10 +36,23 @@ export default function PlogExpanded({ plog, initialIndex = 0, onClose }: Props)
   const originalsRef = useRef<Map<string, string>>(new Map())
   const abortRef = useRef<AbortController | null>(null)
 
+  // Touch swipe state
+  const touchStartX = useRef(0)
+  const touchStartY = useRef(0)
+
   const photo = plog.photos[currentIndex]
   if (!photo) return null
 
   const total = plog.photos.length
+
+  // Lock body scroll while overlay is open
+  useEffect(() => {
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = prev
+    }
+  }, [])
 
   // Reset state + abort in-flight fetch when photo changes
   useEffect(() => {
@@ -91,6 +104,21 @@ export default function PlogExpanded({ plog, initialIndex = 0, onClose }: Props)
     },
     [total],
   )
+
+  // Touch swipe navigation
+  function handleTouchStart(e: React.TouchEvent) {
+    touchStartX.current = e.touches[0].clientX
+    touchStartY.current = e.touches[0].clientY
+  }
+
+  function handleTouchEnd(e: React.TouchEvent) {
+    const dx = e.changedTouches[0].clientX - touchStartX.current
+    const dy = e.changedTouches[0].clientY - touchStartY.current
+    // Only swipe if horizontal movement is dominant and exceeds threshold
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
+      navigate(dx > 0 ? 'prev' : 'next')
+    }
+  }
 
   /** Cancel an in-progress load — aborts fetch + resets state */
   function cancelLoading() {
@@ -192,7 +220,7 @@ export default function PlogExpanded({ plog, initialIndex = 0, onClose }: Props)
       <button
         type="button"
         onClick={onClose}
-        className="absolute top-6 right-6 z-10 rounded-full bg-white/10 p-2 text-white/70 transition-colors hover:bg-white/20 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        className="absolute top-6 right-6 z-10 rounded-full bg-white/10 p-3 text-white/70 transition-colors hover:bg-white/20 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         aria-label="关闭"
       >
         <X className="h-5 w-5" />
@@ -204,7 +232,11 @@ export default function PlogExpanded({ plog, initialIndex = 0, onClose }: Props)
       </div>
 
       {/* Frame */}
-      <div className="relative z-10 flex max-h-[80vh] max-w-[80vw] flex-col items-center animate-frame-in">
+      <div
+        className="relative z-10 flex max-h-[85vh] max-w-[92vw] flex-col items-center animate-frame-in touch-pan-y md:max-h-[80vh] md:max-w-[80vw]"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
         {/* Frame with warm layered shadow */}
         <div className="frame-shadow rounded-sm">
           <div
@@ -216,7 +248,7 @@ export default function PlogExpanded({ plog, initialIndex = 0, onClose }: Props)
               src={imgSrc}
               alt={photo.caption || '照片'}
               onLoad={() => setMediumReady(true)}
-              className={`max-h-[60vh] max-w-[75vw] object-contain transition-opacity duration-300 ${
+              className={`max-h-[70vh] max-w-[90vw] object-contain transition-opacity duration-300 md:max-h-[60vh] md:max-w-[75vw] ${
                 mediumReady ? 'opacity-100' : 'opacity-0'
               }`}
             />
@@ -237,7 +269,7 @@ export default function PlogExpanded({ plog, initialIndex = 0, onClose }: Props)
             type="button"
             onClick={() => navigate('prev')}
             disabled={total <= 1}
-            className="rounded-full p-2 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-25 disabled:hover:bg-transparent disabled:hover:text-white/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            className="rounded-full p-3 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-25 disabled:hover:bg-transparent disabled:hover:text-white/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
             aria-label="上一张"
           >
             <ChevronLeft className="h-5 w-5" />
@@ -247,7 +279,7 @@ export default function PlogExpanded({ plog, initialIndex = 0, onClose }: Props)
           <button
             type="button"
             onClick={() => setInfoVisible((v) => !v)}
-            className={`rounded-full p-2 transition-colors hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+            className={`rounded-full p-3 transition-colors hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
               infoVisible ? 'text-accent hover:text-accent' : 'hover:text-white'
             }`}
             aria-label={infoVisible ? '隐藏信息栏' : '显示信息栏'}
@@ -259,7 +291,7 @@ export default function PlogExpanded({ plog, initialIndex = 0, onClose }: Props)
           <button
             type="button"
             onClick={handleOriginalClick}
-            className={`rounded-full p-2 transition-colors hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+            className={`rounded-full p-3 transition-colors hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
               viewState === 'original'
                 ? 'text-accent hover:text-accent'
                 : viewState === 'loading'
@@ -299,7 +331,7 @@ export default function PlogExpanded({ plog, initialIndex = 0, onClose }: Props)
             type="button"
             onClick={() => navigate('next')}
             disabled={total <= 1}
-            className="rounded-full p-2 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-25 disabled:hover:bg-transparent disabled:hover:text-white/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            className="rounded-full p-3 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-25 disabled:hover:bg-transparent disabled:hover:text-white/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
             aria-label="下一张"
           >
             <ChevronRight className="h-5 w-5" />
