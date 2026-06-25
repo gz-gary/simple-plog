@@ -27,6 +27,8 @@ export default function PlogExpanded({ plog, initialIndex = 0, onClose }: Props)
   const [progress, setProgress] = useState(0)
 
   // Error flash: visible state + key to restart CSS animation on repeat errors
+  const [mediumReady, setMediumReady] = useState(false)
+
   const [errorVisible, setErrorVisible] = useState(false)
   const [errorKey, setErrorKey] = useState(0)
 
@@ -48,6 +50,7 @@ export default function PlogExpanded({ plog, initialIndex = 0, onClose }: Props)
     setViewState('medium')
     setProgress(0)
     setErrorVisible(false)
+    setMediumReady(false)
   }, [photo.id])
 
   // Cleanup on unmount: abort fetch + revoke blob URLs
@@ -212,8 +215,18 @@ export default function PlogExpanded({ plog, initialIndex = 0, onClose }: Props)
             <img
               src={imgSrc}
               alt={photo.caption || '照片'}
-              className="max-h-[60vh] max-w-[75vw] object-contain"
+              onLoad={() => setMediumReady(true)}
+              className={`max-h-[60vh] max-w-[75vw] object-contain transition-opacity duration-300 ${
+                mediumReady ? 'opacity-100' : 'opacity-0'
+              }`}
             />
+
+            {/* Loading placeholder while image not ready */}
+            {!mediumReady && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Loader className="h-6 w-6 animate-spin text-white/30" />
+              </div>
+            )}
           </div>
         </div>
 
