@@ -40,9 +40,9 @@ export default function Timeline({ plogs, onExpand }: Props) {
         ))}
       </div>
 
-      {/* End marker — left-aligned on mobile to sit on the timeline line */}
-      <div className="mt-16 flex justify-start md:justify-center">
-        <div className="ml-[26px] h-2 w-2 rounded-full bg-accent/40 md:ml-0" />
+      {/* End marker (desktop only — on mobile the line ending is signal enough) */}
+      <div className="mt-16 hidden justify-center md:flex">
+        <div className="h-2 w-2 rounded-full bg-accent/40" />
       </div>
     </div>
   )
@@ -68,8 +68,8 @@ function TimelineRow({
         <PlogCard plog={plog} onExpand={onExpand} />
       </div>
 
-      {/* Timeline dot — on the line: left on mobile, center on desktop */}
-      <div className="flex shrink-0 justify-center md:mx-8">
+      {/* Timeline dot — on the line: left on mobile, center on desktop. z-10 keeps it above the line */}
+      <div className="relative z-10 flex shrink-0 justify-center md:mx-8">
         <div className="h-3 w-3 rounded-full border-[3px] border-accent bg-page ring-4 ring-page" />
       </div>
 
