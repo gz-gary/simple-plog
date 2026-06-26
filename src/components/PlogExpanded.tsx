@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import type { Plog, Photo } from '../types'
-import { ChevronLeft, ChevronRight, Info, Maximize, X, Loader } from './icons'
+import { ChevronLeft, ChevronRight, Info, Maximize, Minimize, X, Loader } from './icons'
 
 interface Props {
   plog: Plog
@@ -16,8 +16,7 @@ type NavDirection = 'prev' | 'next'
  * Displays one photo at a time in a centered frame with:
  * - prev/next navigation through the plog's photos
  * - info bar (caption + location), toggleable (default visible)
- * - "view original" — downloads with percentage progress,
- *   button itself shows spinner + %, cancellable during loading
+ * - fullscreen toggle — fills screen with the current photo
  * - error → red exclamation flash + back to toggle-off
  */
 export default function PlogExpanded({ plog, initialIndex = 0, onClose }: Props) {
@@ -39,6 +38,11 @@ export default function PlogExpanded({ plog, initialIndex = 0, onClose }: Props)
   // Touch swipe state
   const touchStartX = useRef(0)
   const touchStartY = useRef(0)
+
+  // Fullscreen
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [isFullscreen, setIsFullscreen] = useState(false)
+  const justExitedFullscreen = useRef(false)
 
   const photo = plog.photos[currentIndex]
   if (!photo) return null
@@ -76,11 +80,31 @@ export default function PlogExpanded({ plog, initialIndex = 0, onClose }: Props)
     }
   }, [])
 
+  // Track fullscreen state
+  useEffect(() => {
+    function handleFSChange() {
+      const isFS = document.fullscreenElement === containerRef.current
+      if (!isFS) {
+        justExitedFullscreen.current = true
+      }
+      setIsFullscreen(isFS)
+    }
+    document.addEventListener('fullscreenchange', handleFSChange)
+    return () => document.removeEventListener('fullscreenchange', handleFSChange)
+  }, [])
+
   // Keyboard nav
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
       switch (e.key) {
         case 'Escape':
+          // When exiting fullscreen via Escape, the browser may fire keydown
+          // after fullscreenchange — swallow one Escape to avoid closing
+          // the overlay when the user only meant to exit fullscreen.
+          if (justExitedFullscreen.current) {
+            justExitedFullscreen.current = false
+            return
+          }
           onClose()
           break
         case 'ArrowLeft':
@@ -105,13 +129,14 @@ export default function PlogExpanded({ plog, initialIndex = 0, onClose }: Props)
     [total],
   )
 
-  // Touch swipe navigation
+  // Touch swipe navigation (disabled in fullscreen)
   function handleTouchStart(e: React.TouchEvent) {
     touchStartX.current = e.touches[0].clientX
     touchStartY.current = e.touches[0].clientY
   }
 
   function handleTouchEnd(e: React.TouchEvent) {
+    if (isFullscreen) return
     const dx = e.changedTouches[0].clientX - touchStartX.current
     const dy = e.changedTouches[0].clientY - touchStartY.current
     // Only swipe if horizontal movement is dominant and exceeds threshold
@@ -119,6 +144,8 @@ export default function PlogExpanded({ plog, initialIndex = 0, onClose }: Props)
       navigate(dx > 0 ? 'prev' : 'next')
     }
   }
+
+  // --- original-loading kept for future use (currently short-circuited) ---
 
   /** Cancel an in-progress load — aborts fetch + resets state */
   function cancelLoading() {
@@ -203,144 +230,158 @@ export default function PlogExpanded({ plog, initialIndex = 0, onClose }: Props)
       ? (originalsRef.current.get(photo.id) || photo.urls.medium)
       : photo.urls.medium
 
+  // --- fullscreen toggle ---
+
+  function handleFullscreenToggle() {
+    if (!isFullscreen) {
+      containerRef.current?.requestFullscreen()
+    } else {
+      document.exitFullscreen()
+    }
+  }
+
   return (
     <div
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center animate-overlay-in"
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center"
       role="dialog"
       aria-modal="true"
       aria-label={`查看照片 ${currentIndex + 1} / ${total}`}
     >
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/85 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/85 backdrop-blur-sm animate-overlay-in"
         onClick={onClose}
       />
 
-      {/* Close button */}
-      <button
-        type="button"
-        onClick={onClose}
-        className="absolute top-6 right-6 z-10 rounded-full bg-white/10 p-3 text-white/70 transition-colors hover:bg-white/20 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-        aria-label="关闭"
-      >
-        <X className="h-5 w-5" />
-      </button>
+      {/* Close button (overlay mode) */}
+      {!isFullscreen && (
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute top-6 right-6 z-10 rounded-full bg-white/10 p-3 text-white/70 transition-colors hover:bg-white/20 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          aria-label="关闭"
+        >
+          <X className="h-5 w-5" />
+        </button>
+      )}
 
-      {/* Photo counter */}
-      <div className="absolute top-6 left-6 z-10 font-display text-sm tracking-wider text-white/50">
-        {currentIndex + 1} / {total}
-      </div>
+      {/* Photo counter (overlay mode) */}
+      {!isFullscreen && (
+        <div className="absolute top-6 left-6 z-10 font-display text-sm tracking-wider text-white/50">
+          {currentIndex + 1} / {total}
+        </div>
+      )}
 
       {/* Frame */}
       <div
-        className="relative z-10 flex max-h-[85vh] max-w-[92vw] flex-col items-center animate-frame-in touch-pan-y md:max-h-[80vh] md:max-w-[80vw]"
+        ref={containerRef}
+        className={`relative z-10 animate-frame-in touch-pan-y ${
+          isFullscreen
+            ? 'h-screen w-screen bg-black'
+            : 'flex flex-col items-center w-full max-h-[85vh] max-w-[92vw] md:max-h-[80vh] md:max-w-[80vw]'
+        }`}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
-        {/* Frame with warm layered shadow */}
-        <div className="frame-shadow rounded-sm">
+        {/* Close button (fullscreen mode) — top-right, subtle */}
+        <button
+          type="button"
+          onClick={() => document.exitFullscreen()}
+          className={`absolute top-4 right-4 z-20 rounded-full bg-white/5 p-2 text-white/40 opacity-0 transition-opacity hover:bg-white/10 hover:text-white/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+            isFullscreen ? 'opacity-100' : 'pointer-events-none'
+          }`}
+          aria-label="退出全屏"
+        >
+          <X className="h-5 w-5" />
+        </button>
+
+        {/* Image — fullscreen: absolute fills entire container; overlay: flex-centered */}
+        <div
+          className={`${
+            isFullscreen
+              ? 'absolute inset-0 flex items-center justify-center'
+              : 'flex w-full min-h-0 flex-col items-center justify-center'
+          }`}
+        >
           <div
-            className={`relative overflow-hidden rounded-sm bg-neutral-900 shadow-2xl shadow-black/50 transition-all duration-500 ${
-              viewState === 'loading' ? 'blur-md' : ''
+            className={`relative overflow-hidden transition-all duration-500 ${
+              isFullscreen ? 'h-full w-full' : 'w-full'
             }`}
           >
             <img
               src={imgSrc}
               alt={photo.caption || '照片'}
               onLoad={() => setMediumReady(true)}
-              className={`max-h-[70vh] max-w-[90vw] object-contain transition-opacity duration-300 md:max-h-[60vh] md:max-w-[75vw] ${
-                mediumReady ? 'opacity-100' : 'opacity-0'
-              }`}
+              className={`object-contain transition-opacity duration-300 ${
+                isFullscreen
+                  ? 'h-full w-full'
+                  : 'w-full max-h-[70vh] md:max-h-[60vh]'
+              } ${mediumReady ? 'opacity-100' : 'opacity-0'}`}
+              style={{ aspectRatio: mediumReady ? 'auto' : '4 / 3' }}
             />
 
-            {/* Loading placeholder while image not ready */}
+            {/* Spinner — no dark frame, just floats centered (shifted down
+                to account for controls bar below, so it looks visually centered) */}
             {!mediumReady && (
               <div className="absolute inset-0 flex items-center justify-center">
-                <Loader className="h-6 w-6 animate-spin text-white/30" />
+                <Loader className="h-7 w-7 animate-spin text-white/30 translate-y-8" />
               </div>
             )}
           </div>
         </div>
 
-        {/* Controls bar */}
-        <div className="mt-5 flex items-center gap-1 text-white/60">
-          {/* Prev */}
-          <button
-            type="button"
-            onClick={() => navigate('prev')}
-            disabled={total <= 1}
-            className="rounded-full p-3 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-25 disabled:hover:bg-transparent disabled:hover:text-white/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-            aria-label="上一张"
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </button>
+        {/* Controls bar (overlay mode) */}
+        {!isFullscreen && (
+          <div className="mt-5 flex items-center gap-1 text-white/60">
+            {/* Prev */}
+            <button
+              type="button"
+              onClick={() => navigate('prev')}
+              disabled={total <= 1}
+              className="rounded-full p-3 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-25 disabled:hover:bg-transparent disabled:hover:text-white/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              aria-label="上一张"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
 
-          {/* Info toggle */}
-          <button
-            type="button"
-            onClick={() => setInfoVisible((v) => !v)}
-            className={`rounded-full p-3 transition-colors hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
-              infoVisible ? 'text-accent hover:text-accent' : 'hover:text-white'
-            }`}
-            aria-label={infoVisible ? '隐藏信息栏' : '显示信息栏'}
-          >
-            <Info className="h-5 w-5" />
-          </button>
+            {/* Info toggle */}
+            <button
+              type="button"
+              onClick={() => setInfoVisible((v) => !v)}
+              className={`rounded-full p-3 transition-colors hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+                infoVisible ? 'text-accent hover:text-accent' : 'hover:text-white'
+              }`}
+              aria-label={infoVisible ? '隐藏信息栏' : '显示信息栏'}
+            >
+              <Info className="h-5 w-5" />
+            </button>
 
-          {/* View original — cancellable during loading */}
-          <button
-            type="button"
-            onClick={handleOriginalClick}
-            className={`rounded-full p-3 transition-colors hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
-              viewState === 'original'
-                ? 'text-accent hover:text-accent'
-                : viewState === 'loading'
-                  ? 'text-accent'
-                  : 'hover:text-white'
-            }`}
-            aria-label={
-              errorVisible
-                ? '加载失败'
-                : viewState === 'loading'
-                  ? '取消加载原图'
-                  : viewState === 'original'
-                    ? '显示中等尺寸'
-                    : '查看原图'
-            }
-          >
-            {errorVisible ? (
-              <span
-                key={errorKey}
-                className="animate-error-flash text-lg font-bold text-red-400"
-                aria-live="assertive"
-              >
-                !
-              </span>
-            ) : viewState === 'loading' ? (
-              <span className="flex items-center gap-1">
-                <Loader className="h-4 w-4 animate-spin" />
-                <span className="text-xs tabular-nums">{progress}%</span>
-              </span>
-            ) : (
+            {/* Fullscreen toggle */}
+            <button
+              type="button"
+              onClick={handleFullscreenToggle}
+              className="rounded-full p-3 transition-colors hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              aria-label="全屏显示"
+            >
               <Maximize className="h-5 w-5" />
-            )}
-          </button>
+            </button>
 
-          {/* Next */}
-          <button
-            type="button"
-            onClick={() => navigate('next')}
-            disabled={total <= 1}
-            className="rounded-full p-3 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-25 disabled:hover:bg-transparent disabled:hover:text-white/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-            aria-label="下一张"
-          >
-            <ChevronRight className="h-5 w-5" />
-          </button>
-        </div>
+            {/* Next */}
+            <button
+              type="button"
+              onClick={() => navigate('next')}
+              disabled={total <= 1}
+              className="rounded-full p-3 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-25 disabled:hover:bg-transparent disabled:hover:text-white/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              aria-label="下一张"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Info bar */}
-      {infoVisible && (
+      {/* Info bar (overlay mode) */}
+      {!isFullscreen && infoVisible && (
         <div className="z-10 mt-4 w-full max-w-lg px-6 animate-info-slide-in">
           <InfoPanel photo={photo} />
         </div>

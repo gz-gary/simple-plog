@@ -107,6 +107,24 @@ export function X({ className }: { className?: string }) {
   )
 }
 
+export function Minimize({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <path d="M8 3v3H5M16 3v3h3M8 21v-3H5M16 21v-3h3" />
+      <path d="M3 8h3v8H3M21 8h-3v8h3" />
+    </svg>
+  )
+}
+
 export function Loader({ className }: { className?: string }) {
   return (
     <svg
