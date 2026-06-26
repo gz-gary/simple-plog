@@ -425,10 +425,15 @@ function AddPhotoModal({ open, onClose, onAdd }: AddPhotoModalProps) {
 export default function PlogEditor() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { getPlog, updatePlog } = useAdmin()
+  const { getPlog, updatePlog, addPlog } = useAdmin()
   const screens = useBreakpoint()
   const isMobile = !screens.md
+  const isNew = id === 'new'
+
   const [plog, setPlog] = useState<Plog | null>(() => {
+    if (isNew) {
+      return { id: '__new__', photos: [] }
+    }
     const p = getPlog(id ?? '')
     return p ? JSON.parse(JSON.stringify(p)) : null
   })
@@ -446,6 +451,11 @@ export default function PlogEditor() {
 
   // Sync from context when id changes
   useEffect(() => {
+    if (isNew) {
+      setPlog({ id: '__new__', photos: [] })
+      setDirty(false)
+      return
+    }
     const p = getPlog(id ?? '')
     if (p) {
       setPlog(JSON.parse(JSON.stringify(p)))
@@ -453,7 +463,7 @@ export default function PlogEditor() {
     } else {
       setPlog(null)
     }
-  }, [id, getPlog])
+  }, [id, getPlog, isNew])
 
   const handlePhotoChange = useCallback(
     (photoId: string, patch: Partial<Photo>) => {
@@ -522,6 +532,21 @@ export default function PlogEditor() {
   // ---- Save ----
   const handleSave = () => {
     if (!plog) return
+
+    if (isNew) {
+      if (plog.photos.length === 0) {
+        message.error('请至少添加一张照片')
+        return
+      }
+      const realId = `plog-${Date.now()}`
+      const created = { ...plog, id: realId }
+      addPlog(created)
+      setDirty(false)
+      message.success('Plog 已创建')
+      navigate(`/admin/plogs/${realId}`, { replace: true })
+      return
+    }
+
     updatePlog(plog)
     setDirty(false)
     message.success('已保存')
@@ -568,25 +593,31 @@ export default function PlogEditor() {
         >
           <div>
             <Text strong style={{ fontSize: isMobile ? 18 : 22, display: 'block' }}>
-              {displayDate || '未设置时间'}
+              {isNew ? '新建 Plog' : (displayDate || '未设置时间')}
             </Text>
-            <Space size={4} style={{ marginTop: 4 }}>
-              {displayCities.map((c) => (
-                <Tag key={c} color="#C47E4F" style={{ borderRadius: 4 }}>
-                  {c}
-                </Tag>
-              ))}
+            {!isNew ? (
+              <Space size={4} style={{ marginTop: 4 }}>
+                {displayCities.map((c) => (
+                  <Tag key={c} color="#C47E4F" style={{ borderRadius: 4 }}>
+                    {c}
+                  </Tag>
+                ))}
+                <Text type="secondary" style={{ fontSize: 13 }}>
+                  {plog.photos.length} 张照片
+                </Text>
+              </Space>
+            ) : (
               <Text type="secondary" style={{ fontSize: 13 }}>
-                {plog.photos.length} 张照片
+                添加照片后即可创建 Plog
               </Text>
-            </Space>
+            )}
           </div>
           <Space
             style={{
               alignSelf: isMobile ? 'flex-end' : undefined,
             }}
           >
-            {dirty && (
+            {!isNew && dirty && (
               <Text type="secondary" style={{ fontSize: 12 }}>
                 有未保存的更改
               </Text>
@@ -595,10 +626,10 @@ export default function PlogEditor() {
               type="primary"
               icon={<SaveOutlined />}
               onClick={handleSave}
-              disabled={!dirty}
+              disabled={!isNew && !dirty}
               size={isMobile ? 'middle' : undefined}
             >
-              保存
+              {isNew ? '创建' : '保存'}
             </Button>
           </Space>
         </div>

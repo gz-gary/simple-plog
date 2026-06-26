@@ -1,12 +1,8 @@
-import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Table,
   Button,
   Popconfirm,
-  Modal,
-  Form,
-  Input,
   message,
   Typography,
   Empty,
@@ -22,40 +18,10 @@ const { Text } = Typography
 const { useBreakpoint } = Grid
 
 export default function PlogList() {
-  const { plogs, addPlog, deletePlog } = useAdmin()
+  const { plogs, deletePlog } = useAdmin()
   const navigate = useNavigate()
-  const [addOpen, setAddOpen] = useState(false)
-  const [form] = Form.useForm()
   const screens = useBreakpoint()
   const isMobile = !screens.md
-
-  const handleAdd = () => {
-    form.validateFields().then((values) => {
-      const now = new Date().toISOString()
-      const photoLines: string[] = (values.photoUrls ?? '')
-        .split('\n')
-        .map((s: string) => s.trim())
-        .filter(Boolean)
-
-      const newPlog: Plog = {
-        id: `plog-${Date.now()}`,
-        photos:
-          photoLines.length > 0
-            ? photoLines.map((url: string, i: number) => ({
-                id: `p-${Date.now()}-${i}`,
-                urls: { thumbnail: url, medium: url, original: url },
-                takenAt: now,
-                location: { city: values.city ?? '未标注' },
-                caption: '',
-              }))
-            : [],
-      }
-      addPlog(newPlog)
-      message.success('Plog 已添加')
-      setAddOpen(false)
-      form.resetFields()
-    })
-  }
 
   const columns = [
     {
@@ -168,7 +134,7 @@ export default function PlogList() {
         <Button
           type="primary"
           icon={<PlusOutlined />}
-          onClick={() => setAddOpen(true)}
+          onClick={() => navigate('/admin/plogs/new')}
           size={isMobile ? 'middle' : undefined}
         >
           新建 Plog
@@ -178,7 +144,7 @@ export default function PlogList() {
       {/* Table */}
       {plogs.length === 0 ? (
         <Empty description="还没有 Plog" style={{ marginTop: isMobile ? 48 : 80 }}>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => setAddOpen(true)}>
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/admin/plogs/new')}>
             新建第一个
           </Button>
         </Empty>
@@ -197,38 +163,6 @@ export default function PlogList() {
           size={isMobile ? 'small' : undefined}
         />
       )}
-
-      {/* Add modal */}
-      <Modal
-        title="新建 Plog"
-        open={addOpen}
-        onOk={handleAdd}
-        onCancel={() => {
-          setAddOpen(false)
-          form.resetFields()
-        }}
-        destroyOnClose
-        width={isMobile ? '100%' : undefined}
-        style={isMobile ? { top: 16, maxWidth: 400 } : undefined}
-      >
-        <Form form={form} layout="vertical">
-          <Form.Item
-            name="city"
-            label="拍摄城市"
-            rules={[{ required: true, message: '请填写城市' }]}
-          >
-            <Input placeholder="例如：南京" />
-          </Form.Item>
-          <Form.Item
-            name="photoUrls"
-            label="图片 URL（每行一张）"
-            help="每行一个图片链接，至少填写一个"
-            rules={[{ required: true, message: '请至少填写一个图片 URL' }]}
-          >
-            <Input.TextArea rows={4} placeholder="https://picsum.photos/200/200?random=1" />
-          </Form.Item>
-        </Form>
-      </Modal>
     </div>
   )
 }
