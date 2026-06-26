@@ -225,6 +225,13 @@ export default function PlogExpanded({ plog, initialIndex = 0, onClose }: Props)
     }
   }
 
+  // Suppress noUnusedLocals — declarations kept for future re-enable
+  void Minimize
+  void progress
+  void errorVisible
+  void errorKey
+  void handleOriginalClick
+
   // Image source: blob URL > cached URL > medium
   const imgSrc =
     viewState === 'original'
