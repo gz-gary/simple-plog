@@ -9,8 +9,8 @@ interface Props {
 /**
  * Vertical timeline.
  *
- * Plog cards alternate left/right of a center line.
- * On narrow screens all cards move to the right side.
+ * Plog cards alternate left/right of a center line on desktop.
+ * On mobile, all cards are on the right with a left-side timeline line.
  */
 export default function Timeline({ plogs, onExpand }: Props) {
   if (plogs.length === 0) {
@@ -23,8 +23,11 @@ export default function Timeline({ plogs, onExpand }: Props) {
 
   return (
     <div className="relative mx-auto max-w-3xl px-6 py-16">
-      {/* Center line (hidden on mobile) */}
+      {/* Center line (desktop) */}
       <div className="absolute left-1/2 top-0 bottom-0 hidden w-px -translate-x-px bg-line md:block" />
+
+      {/* Left timeline line (mobile) — runs through all dots */}
+      <div className="absolute left-[30px] top-0 bottom-0 w-px bg-line md:hidden" />
 
       <div className="flex flex-col gap-16 md:gap-24">
         {plogs.map((plog, i) => (
@@ -37,9 +40,9 @@ export default function Timeline({ plogs, onExpand }: Props) {
         ))}
       </div>
 
-      {/* End marker */}
-      <div className="mt-16 flex justify-center">
-        <div className="h-2 w-2 rounded-full bg-accent/40" />
+      {/* End marker — left-aligned on mobile to sit on the timeline line */}
+      <div className="mt-16 flex justify-start md:justify-center">
+        <div className="ml-[26px] h-2 w-2 rounded-full bg-accent/40 md:ml-0" />
       </div>
     </div>
   )
@@ -56,17 +59,17 @@ function TimelineRow({
 }) {
   return (
     <div
-      className={`flex flex-col items-center md:flex-row md:items-center ${
+      className={`flex flex-row-reverse items-start gap-4 md:items-center md:gap-0 ${
         side === 'left' ? 'md:flex-row' : 'md:flex-row-reverse'
       }`}
     >
       {/* Card */}
-      <div className="w-full flex-1 md:w-[calc(50%-2rem)] md:flex-none">
+      <div className="flex-1 min-w-0 md:w-[calc(50%-2rem)] md:flex-none">
         <PlogCard plog={plog} onExpand={onExpand} />
       </div>
 
-      {/* Timeline dot — above card on mobile, centered on desktop */}
-      <div className="order-first mb-3 flex shrink-0 justify-center md:order-none md:mx-8 md:mb-0">
+      {/* Timeline dot — on the line: left on mobile, center on desktop */}
+      <div className="flex shrink-0 justify-center md:mx-8">
         <div className="h-3 w-3 rounded-full border-[3px] border-accent bg-page ring-4 ring-page" />
       </div>
 

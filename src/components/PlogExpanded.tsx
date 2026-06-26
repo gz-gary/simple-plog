@@ -43,6 +43,7 @@ export default function PlogExpanded({ plog, initialIndex = 0, onClose }: Props)
   const containerRef = useRef<HTMLDivElement>(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const justExitedFullscreen = useRef(false)
+  const [fullscreenSupported] = useState(() => document.fullscreenEnabled ?? false)
 
   const photo = plog.photos[currentIndex]
   if (!photo) return null
@@ -283,11 +284,11 @@ export default function PlogExpanded({ plog, initialIndex = 0, onClose }: Props)
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
-        {/* Close button (fullscreen mode) — top-right, subtle */}
+        {/* Close button (fullscreen mode) — top-right, subtle, 44px touch target */}
         <button
           type="button"
           onClick={() => document.exitFullscreen()}
-          className={`absolute top-4 right-4 z-20 rounded-full bg-white/5 p-2 text-white/40 opacity-0 transition-opacity hover:bg-white/10 hover:text-white/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+          className={`absolute top-4 right-4 z-20 rounded-full bg-white/5 p-3 text-white/40 opacity-0 transition-opacity hover:bg-white/10 hover:text-white/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
             isFullscreen ? 'opacity-100' : 'pointer-events-none'
           }`}
           aria-label="退出全屏"
@@ -356,15 +357,17 @@ export default function PlogExpanded({ plog, initialIndex = 0, onClose }: Props)
               <Info className="h-5 w-5" />
             </button>
 
-            {/* Fullscreen toggle */}
-            <button
-              type="button"
-              onClick={handleFullscreenToggle}
-              className="rounded-full p-3 transition-colors hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-              aria-label="全屏显示"
-            >
-              <Maximize className="h-5 w-5" />
-            </button>
+            {/* Fullscreen toggle (hidden when API unsupported, e.g. iOS Safari) */}
+            {fullscreenSupported && (
+              <button
+                type="button"
+                onClick={handleFullscreenToggle}
+                className="rounded-full p-3 transition-colors hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                aria-label="全屏显示"
+              >
+                <Maximize className="h-5 w-5" />
+              </button>
+            )}
 
             {/* Next */}
             <button
