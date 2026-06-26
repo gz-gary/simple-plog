@@ -45,6 +45,21 @@ export default function PlogExpanded({ plog, initialIndex = 0, onClose }: Props)
   const justExitedFullscreen = useRef(false)
   const [fullscreenSupported] = useState(() => document.fullscreenEnabled ?? false)
 
+  // Compact layout when viewport height is tight (e.g. landscape phone + browser chrome)
+  const [isCompact, setIsCompact] = useState(false)
+  useEffect(() => {
+    function check() {
+      setIsCompact((window.visualViewport?.height ?? window.innerHeight) < 500)
+    }
+    check()
+    window.visualViewport?.addEventListener('resize', check)
+    window.addEventListener('resize', check)
+    return () => {
+      window.visualViewport?.removeEventListener('resize', check)
+      window.removeEventListener('resize', check)
+    }
+  }, [])
+
   const photo = plog.photos[currentIndex]
   if (!photo) return null
 
@@ -286,7 +301,9 @@ export default function PlogExpanded({ plog, initialIndex = 0, onClose }: Props)
         className={`relative z-10 animate-frame-in touch-pan-y ${
           isFullscreen
             ? 'h-screen w-screen bg-black'
-            : 'flex flex-col items-center w-full max-h-[85vh] max-w-[92vw] lg:max-h-[80vh] lg:max-w-[80vw]'
+            : isCompact
+              ? 'flex flex-row items-center w-full max-h-[85vh] max-w-[92vw] gap-2'
+              : 'flex flex-col items-center w-full max-h-[85vh] max-w-[92vw] lg:max-h-[80vh] lg:max-w-[80vw]'
         }`}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
@@ -303,17 +320,19 @@ export default function PlogExpanded({ plog, initialIndex = 0, onClose }: Props)
           <X className="h-5 w-5" />
         </button>
 
-        {/* Image — fullscreen: absolute fills entire container; overlay: flex-centered */}
+        {/* Image — fullscreen: absolute fills entire container; compact: flex-1 left; overlay: flex-centered */}
         <div
           className={`${
             isFullscreen
               ? 'absolute inset-0 flex items-center justify-center'
-              : 'flex w-full min-h-0 flex-col items-center justify-center'
+              : isCompact
+                ? 'flex flex-1 min-w-0 items-center justify-center'
+                : 'flex w-full min-h-0 flex-col items-center justify-center'
           }`}
         >
           <div
             className={`relative overflow-hidden transition-all duration-500 ${
-              isFullscreen ? 'h-full w-full' : 'w-full'
+              isFullscreen ? 'h-full w-full' : isCompact ? 'w-full' : 'w-full'
             }`}
           >
             <img
@@ -323,23 +342,94 @@ export default function PlogExpanded({ plog, initialIndex = 0, onClose }: Props)
               className={`object-contain transition-opacity duration-300 ${
                 isFullscreen
                   ? 'h-full w-full'
-                  : 'w-full max-h-[70vh] lg:max-h-[60vh]'
+                  : isCompact
+                    ? 'w-full max-h-[85vh]'
+                    : 'w-full max-h-[70vh] lg:max-h-[60vh]'
               } ${mediumReady ? 'opacity-100' : 'opacity-0'}`}
               style={{ aspectRatio: mediumReady ? 'auto' : '4 / 3' }}
             />
 
             {/* Spinner — no dark frame, just floats centered (shifted down
-                to account for controls bar below, so it looks visually centered) */}
+                to account for controls bar below in normal layout) */}
             {!mediumReady && (
               <div className="absolute inset-0 flex items-center justify-center">
-                <Loader className="h-7 w-7 animate-spin text-white/30 translate-y-8" />
+                <Loader className={`h-7 w-7 animate-spin text-white/30 ${isCompact ? '' : 'translate-y-8'}`} />
               </div>
             )}
           </div>
         </div>
 
+        {/* Compact sidebar — when height is tight, move controls + info to the right */}
+        {!isFullscreen && isCompact && (
+          <div className="flex shrink-0 flex-col items-center gap-3">
+            {/* Controls (vertical) */}
+            <div className="flex flex-col items-center gap-1 text-white/60">
+              {/* Prev */}
+              <button
+                type="button"
+                onClick={() => navigate('prev')}
+                disabled={total <= 1}
+                className="rounded-full p-3 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-25 disabled:hover:bg-transparent disabled:hover:text-white/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                aria-label="上一张"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+
+              {/* Info toggle */}
+              <button
+                type="button"
+                onClick={() => setInfoVisible((v) => !v)}
+                className={`rounded-full p-3 transition-colors hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+                  infoVisible ? 'text-accent hover:text-accent' : 'hover:text-white'
+                }`}
+                aria-label={infoVisible ? '隐藏信息栏' : '显示信息栏'}
+              >
+                <Info className="h-5 w-5" />
+              </button>
+
+              {/* Fullscreen toggle */}
+              {fullscreenSupported && (
+                <button
+                  type="button"
+                  onClick={handleFullscreenToggle}
+                  className="rounded-full p-3 transition-colors hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                  aria-label="全屏显示"
+                >
+                  <Maximize className="h-5 w-5" />
+                </button>
+              )}
+
+              {/* Next */}
+              <button
+                type="button"
+                onClick={() => navigate('next')}
+                disabled={total <= 1}
+                className="rounded-full p-3 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-25 disabled:hover:bg-transparent disabled:hover:text-white/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                aria-label="下一张"
+              >
+                <ChevronRight className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Info panel — capped height, scrollable overflow */}
+            {infoVisible && (
+              <div className="w-40 max-h-[35vh] overflow-y-auto rounded-sm border border-white/10 bg-black/40 px-3 py-2 backdrop-blur text-left">
+                {photo.caption && (
+                  <p className="text-xs leading-relaxed text-white/85">
+                    {photo.caption}
+                  </p>
+                )}
+                <p className="mt-1 font-display text-[11px] tracking-widest text-white/45">
+                  {photo.location.city}
+                  {photo.location.place && ` · ${photo.location.place}`}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Controls bar (overlay mode) */}
-        {!isFullscreen && (
+        {!isFullscreen && !isCompact && (
           <div className="mt-5 flex items-center gap-1 text-white/60">
             {/* Prev */}
             <button
@@ -390,8 +480,8 @@ export default function PlogExpanded({ plog, initialIndex = 0, onClose }: Props)
         )}
       </div>
 
-      {/* Info bar (overlay mode) */}
-      {!isFullscreen && infoVisible && (
+      {/* Info bar (overlay mode — hidden in compact since info is in sidebar) */}
+      {!isFullscreen && !isCompact && infoVisible && (
         <div className="z-10 mt-4 w-full max-w-lg px-6 animate-info-slide-in">
           <InfoPanel photo={photo} />
         </div>
