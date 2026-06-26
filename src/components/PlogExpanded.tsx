@@ -286,7 +286,7 @@ export default function PlogExpanded({ plog, initialIndex = 0, onClose }: Props)
         className={`relative z-10 animate-frame-in touch-pan-y ${
           isFullscreen
             ? 'h-screen w-screen bg-black'
-            : 'flex flex-col items-center w-full max-h-[85vh] max-w-[92vw] md:max-h-[80vh] md:max-w-[80vw]'
+            : 'flex flex-col items-center w-full max-h-[85vh] max-w-[92vw] lg:max-h-[80vh] lg:max-w-[80vw]'
         }`}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
@@ -323,7 +323,7 @@ export default function PlogExpanded({ plog, initialIndex = 0, onClose }: Props)
               className={`object-contain transition-opacity duration-300 ${
                 isFullscreen
                   ? 'h-full w-full'
-                  : 'w-full max-h-[70vh] md:max-h-[60vh]'
+                  : 'w-full max-h-[70vh] lg:max-h-[60vh]'
               } ${mediumReady ? 'opacity-100' : 'opacity-0'}`}
               style={{ aspectRatio: mediumReady ? 'auto' : '4 / 3' }}
             />

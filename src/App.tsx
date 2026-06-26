@@ -22,8 +22,8 @@ export default function App() {
   return (
     <>
       {/* Header */}
-      <header className="px-6 pt-20 pb-4 text-left md:text-center md:pt-28 md:pb-6">
-        <h1 className="font-display text-4xl font-medium italic tracking-wide text-ink md:text-5xl">
+      <header className="px-6 pt-20 pb-4 text-left lg:text-center lg:pt-28 lg:pb-6">
+        <h1 className="font-display text-4xl font-medium italic tracking-wide text-ink lg:text-5xl">
           plog
         </h1>
         <p className="mt-2 font-display text-base tracking-[0.3em] text-muted">
@@ -37,7 +37,7 @@ export default function App() {
       </main>
 
       {/* Footer */}
-      <footer className="px-6 pb-16 text-left md:text-center">
+      <footer className="px-6 pb-16 text-center">
         <p className="font-display text-xs tracking-[0.4em] text-muted/50">
           — 记录看见的光 —
         </p>
