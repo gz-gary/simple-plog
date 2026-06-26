@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import type { Plog, Photo } from '../types'
-import { ChevronLeft, ChevronRight, Info, Maximize, Minimize, X, Loader } from './icons'
+import { ChevronLeft, ChevronRight, Info, Maximize, Minimize, X, Loader, LocationPin } from './icons'
 
 interface Props {
   plog: Plog
@@ -408,7 +408,21 @@ export default function PlogExpanded({ plog, initialIndex = 0, onClose }: Props)
   )
 }
 
+/**
+ * Format an ISO 8601 timestamp to minute precision.
+ * Preserves the original local time from the string (no timezone conversion).
+ *
+ * "2026-06-14T08:23:00+08:00" → "2026-06-14 08:23"
+ */
+function formatPhotoTime(isoString: string): string {
+  const match = isoString.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/)
+  if (!match) return isoString
+  return `${match[1]} ${match[2]}`
+}
+
 function InfoPanel({ photo }: { photo: Photo }) {
+  const locationParts = [photo.location.city, photo.location.place].filter(Boolean)
+
   return (
     <div className="mx-auto max-w-md rounded-sm border border-white/10 bg-black/40 px-5 py-3 backdrop-blur">
       {photo.caption && (
@@ -416,9 +430,12 @@ function InfoPanel({ photo }: { photo: Photo }) {
           {photo.caption}
         </p>
       )}
-      <p className="mt-1.5 font-display text-xs tracking-widest text-white/45">
-        {photo.location.city}
-        {photo.location.place && ` · ${photo.location.place}`}
+      <p className="mt-1.5 flex items-center justify-between font-display text-xs tracking-widest text-white/45">
+        <span className="inline-flex items-center gap-1">
+          <LocationPin className="h-3 w-3 shrink-0" />
+          <span>{locationParts.join(' · ')}</span>
+        </span>
+        <time dateTime={photo.takenAt}>{formatPhotoTime(photo.takenAt)}</time>
       </p>
     </div>
   )
