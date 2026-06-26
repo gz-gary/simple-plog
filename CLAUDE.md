@@ -42,18 +42,13 @@ Header 在 <1024px 时左对齐（内容区对齐），≥1024px 时居中。
 
 ### Lightbox 弹窗 (PlogExpanded)
 
-两个维度交叉判断：
+三个展示模式：
 
-| | 高度 ≥ 500px | 高度 < 500px |
-|---|---|---|
-| **非全屏** | **标准布局**: 图片 → 控制栏(下) → 文案(下)，垂直居中 | **紧凑布局**: 图片(左) + 控制栏+文案(右)，水平排列 |
-| **全屏** | 图片撑满屏幕，仅右上角关闭按钮 | 同左（全屏无视高度阈值） |
-
-紧凑布局的文案面板：随内容增长至 `max-h-[35vh]`，超出部分 `overflow-y-auto` 滚动。
-
-高度检测：`window.visualViewport.height`（兜底 `window.innerHeight`），阈值 500px。监听 `visualViewport.resize` + `window.resize`。
-
-全屏 API 不可用（iOS Safari）时自动隐藏全屏按钮。
+| 模式 | 布局 |
+|---|---|
+| **非全屏** | 图片居中，下方控制栏 + 信息栏。frame 受 `max-h-[85vh]` 约束；内容超界时整个 overlay 区域可滚动（`overflow-y-auto` + `my-auto` 居中） |
+| **全屏** | 图片撑满屏幕，仅右上角关闭按钮 |
+| **全屏（不支持）** | 全屏按钮自动隐藏（iOS Safari） |
 
 ### 为什么用 lg(1024px) 而非 md(768px)
 
