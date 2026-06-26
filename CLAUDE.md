@@ -36,9 +36,9 @@
 | < 1024px | **左侧时间线** — 竖线靠左（30px），dot 在线上，卡片统一右排 |
 | ≥ 1024px | **中心交替时间线** — 竖线居中，卡片左右交替，dot 在中心线上 |
 
-Footer 在所有宽度下均居中（仪式性收束，不随内容对齐）。
+Footer 在所有宽度下均居中——但不是相对 viewport，而是相对卡片内容的中心线（移动端通过 `translate-x-[14px]` 补偿 dot + gap 偏移）。
 
-Header 在 <1024px 时左对齐（内容区对齐），≥1024px 时居中。
+Header 在 <1024px 时左对齐至卡片内容左缘（`pl-[28px]`），≥1024px 时在容器内居中。Header 和 Footer 使用与 Timeline 相同的 `mx-auto max-w-3xl px-6` 容器，确保对齐参考系一致。
 
 ### Lightbox 弹窗 (PlogExpanded)
 

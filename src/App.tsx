@@ -21,14 +21,16 @@ export default function App() {
 
   return (
     <>
-      {/* Header */}
-      <header className="px-6 pt-20 pb-4 text-left lg:text-center lg:pt-28 lg:pb-6">
-        <h1 className="font-display text-4xl font-medium italic tracking-wide text-ink lg:text-5xl">
-          plog
-        </h1>
-        <p className="mt-2 font-display text-base tracking-[0.3em] text-muted">
-          南京
-        </p>
+      {/* Header — mobile: text left-aligned to card edge; desktop: centered */}
+      <header className="mx-auto max-w-3xl px-6 pt-20 pb-4 lg:pt-28 lg:pb-6">
+        <div className="pl-[28px] lg:pl-0 lg:text-center">
+          <h1 className="font-display text-4xl font-medium italic tracking-wide text-ink lg:text-5xl">
+            plog
+          </h1>
+          <p className="mt-2 font-display text-base tracking-[0.3em] text-muted">
+            南京
+          </p>
+        </div>
       </header>
 
       {/* Timeline */}
@@ -36,9 +38,9 @@ export default function App() {
         <Timeline plogs={plogs} onExpand={handleExpand} />
       </main>
 
-      {/* Footer */}
-      <footer className="px-6 pb-16 text-center">
-        <p className="font-display text-xs tracking-[0.4em] text-muted/50">
+      {/* Footer — mobile: center relative to card area; desktop: centered in container */}
+      <footer className="mx-auto max-w-3xl px-6 pb-16">
+        <p className="translate-x-[14px] text-center font-display text-xs tracking-[0.4em] text-muted/50 lg:translate-x-0">
           — 记录看见的光 —
         </p>
       </footer>
